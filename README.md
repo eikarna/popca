@@ -1,6 +1,10 @@
 # PopCA
 PopCat Automation in CLI 😱
 
+I Don't know it's work or not 😂
+
+Try it by Yourself 😉
+
 # Usage
 ##### Go To PopCat website
 [PopCat](https://popcat.click)
