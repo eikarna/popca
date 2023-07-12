@@ -1,0 +1,12 @@
+{
+    "geo-store-location": "{\"countryCode\":\"ID\",\"stateProvCode\":\"JK\",\"stateProv\":\"Jakarta\",\"isEuMember\":\"false\",\"version\":\"1.0\"}",
+    "dnsDisplayed": "undefined",
+    "ccpaApplies": "false",
+    "signedLspa": "undefined",
+    "_pbjs_userid_consent_data": "6683316680106290",
+    "_sharedid": "0adc1698-bb0c-4372-943d-301b11b71bb0",
+    "consentUUID": "f23b2518-5925-4c65-b063-90e489565133",
+    "ccpaUUID": "a185378c-ef13-455f-88c8-1b129a2a8865",
+    "country": "ID",
+    "pop_count": "56876"
+}
