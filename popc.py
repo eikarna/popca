@@ -1,77 +1,97 @@
-import requests as r
-import threading as t
-import time as tm
-import json as j
-from colorama import init as i, Fore as F, Style as S
+import sys
+import requests
+import threading
+import time
+import json
+from colorama import init, Fore, Style
 
-i(autoreset=True)
+init(autoreset=True)
 
-SUCCESS_COLOR = S.BRIGHT + F.GREEN
-ERROR_COLOR = S.BRIGHT + F.RED
-WARN_COLOR = S.BRIGHT + F.YELLOW
+SUCCESS_COLOR = Style.BRIGHT + Fore.GREEN
+ERROR_COLOR = Style.BRIGHT + Fore.RED
+WARN_COLOR = Style.BRIGHT + Fore.YELLOW
 
 url = "https://stats.popcat.click/pop?pop_count=800"
 
 
-def gc(fn):
-    with open(fn, "r") as f:
-        cd = f.read()
+def get_cookie(file_name):
+    # Read the cookie data from the file
+    with open(file_name, "r") as file:
+        cookie_data = file.read()
 
     try:
-        c = j.loads(cd)
-    except j.JSONDecodeError:
+        # Parse the cookie data into a dictionary
+        cookies = json.loads(cookie_data)
+    except json.JSONDecodeError:
         print("Error parsing cookie data.")
-        c = {}
-    return c
+        cookies = {}
+    return cookies
 
 
-def sp():
-    global pc
-    rl = 5
-    rc = 0
-    s = False
+def spam(cookie_file):
+    global pop_count
+    retry_limit = 5
+    retry_count = 0
+    success = False
 
-    while not s and rc < rl:
+    while not success and retry_count < retry_limit:
         try:
-            ckie = gc("cookies.txt")
-            pc = int(ckie["pop_count"])
-            sess = r.Session()
+            # Get the cookies from the provided file
+            cookies = get_cookie(cookie_file)
+            pop_count = int(cookies["pop_count"])
+            session = requests.Session()
 
-            for cn, cv in ckie.items():
-                sess.cookies.set(cn, cv)
+            # Set the cookies in the session
+            for cookie_name, cookie_value in cookies.items():
+                session.cookies.set(cookie_name, cookie_value)
 
-            resp = sess.post(url)
+            # Send the POST request to pop the cat
+            response = session.post(url)
 
-            if resp.status_code == 201 and len(resp.json()) > 0:
-                data = resp.json()
+            if response.status_code == 201 and len(response.json()) > 0:
+                # If the request was successful, update the pop count
+                data = response.json()
                 token = data["Token"]
-                url_token = f"{url}?token={token}"
-                pc += 800
-                sess.cookies.set("pop_count", str(pc))
-                updated_cookies = sess.cookies.get_dict()
-                cookie_string = "; ".join([f"{k}={v}" for k, v in updated_cookies.items()])
-                with open("raw_cookies.txt", "w") as f:
-                    f.write(cookie_string)
-                with open("cookies.txt", "w") as f:
-                    f.write(j.dumps(updated_cookies, indent=4))
-                print(f"{SUCCESS_COLOR}Success Popping! Current Pops:", pc)
+                url_with_token = f"{url}?token={token}"
+                pop_count += 800
+                session.cookies.set("pop_count", str(pop_count))
+                updated_cookies = session.cookies.get_dict()
+
+                # Save the updated cookies to files
+                cookie_string = "; ".join([f"{key}={value}" for key, value in updated_cookies.items()])
+                with open("raw_cookies.txt", "w") as file:
+                    file.write(cookie_string)
+                with open("cookies.txt", "w") as file:
+                    file.write(json.dumps(updated_cookies, indent=4))
+
+                # Print the success message
+                print(f"{SUCCESS_COLOR}Success Popping! Current Pops:", pop_count)
             else:
-                print(f"{ERROR_COLOR}Request failed with status code:", resp.status_code)
-            tm.sleep(30)
-        except (r.exceptions.RequestException, j.JSONDecodeError, Exception) as e:
+                # Print error message if the request failed
+                print(f"{ERROR_COLOR}Request failed with status code:", response.status_code)
+
+            # Wait for 30 seconds before the next request
+            time.sleep(30)
+        except (requests.exceptions.RequestException, json.JSONDecodeError, Exception) as e:
+            # Handle exceptions and retry if necessary
             print(f"{ERROR_COLOR}An error occurred:", str(e))
-            rc += 1
-            print(f"{WARN_COLOR}Retrying... Attempt {rc}/{rl}")
-            tm.sleep(1)
+            retry_count += 1
+            print(f"{WARN_COLOR}Retrying... Attempt {retry_count}/{retry_limit}")
+            time.sleep(1)
 
-    if not s:
-        print(f"{ERROR_COLOR}Function failed after {rl} attempts.")
+    if not success:
+        print(f"{ERROR_COLOR}Function failed after {retry_limit} attempts.")
 
 
-def m():
-    t1 = t.Thread(target=sp, daemon=True)
-    t1.start()
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python script.py [cookie_file]")
+        return
+
+    # Get the cookie file name from command-line argument
+    cookie_file = sys.argv[1]
+    spam(cookie_file)
 
 
 if __name__ == "__main__":
-    m()
+    main()
